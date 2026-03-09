@@ -517,6 +517,42 @@
     .priority-option.selected-medium { background: var(--tan); color: var(--dark); border-color: var(--stone); }
     .priority-option.selected-low { background: var(--cream); color: var(--stone); border-color: var(--mid); }
 
+    /* DIFFICULTY SELECTOR */
+    .difficulty-selector {
+      display: flex;
+      gap: 8px;
+    }
+    .diff-option {
+      flex: 1;
+      text-align: center;
+      padding: 8px 6px;
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-family: var(--body);
+      transition: all 0.15s;
+      color: var(--stone);
+    }
+    .diff-option:hover { border-color: var(--stone); }
+    .diff-option.selected-easy  { background: #e8f0e8; color: #3a5c3a; border-color: #8aaa8a; }
+    .diff-option.selected-medium { background: var(--tan); color: var(--dark); border-color: var(--stone); }
+    .diff-option.selected-hard  { background: #3d3328; color: var(--cream); border-color: #3d3328; }
+
+    /* DIFFICULTY BADGE on cards */
+    .diff-badge {
+      font-family: var(--body);
+      font-size: 0.68rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .diff-easy   { background: #e8f0e8; color: #3a5c3a; border: 1px solid #8aaa8a; }
+    .diff-medium { background: var(--tan); color: var(--stone); border: 1px solid var(--rule); }
+    .diff-hard   { background: #3d3328; color: var(--cream); border: 1px solid #3d3328; }
+
     /* MOVE TO LEARNED CONFIRM */
     .toast {
       position: fixed;
@@ -643,6 +679,15 @@
       </div>
     </div>
 
+    <div class="form-group">
+      <label>Difficulty</label>
+      <div class="difficulty-selector">
+        <div class="diff-option" data-d="easy"   onclick="selectDifficulty('easy')">Easy</div>
+        <div class="diff-option" data-d="medium" onclick="selectDifficulty('medium')">Medium</div>
+        <div class="diff-option" data-d="hard"   onclick="selectDifficulty('hard')">Hard</div>
+      </div>
+    </div>
+
     <div class="form-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
       <button class="btn-save" onclick="saveDance()">Save</button>
@@ -671,6 +716,7 @@
   let currentTab = 'know';
   let editingId = null;
   let selectedPriority = 'medium';
+  let selectedDifficulty = 'medium';
   let currentSort = 'priority';
 
   // ─── TAB SWITCHING ───────────────────────────────────────────
@@ -740,6 +786,8 @@
     const songTags = dance.songs.slice(0, 3).map(s => `<span class="song-tag">${esc(s)}</span>`).join('');
     const priorityBadge = dance.tab === 'learn'
       ? `<span class="priority-badge priority-${dance.priority}">${dance.priority}</span>` : '';
+    const diffLabel = dance.difficulty || 'medium';
+    const diffBadge = `<span class="diff-badge diff-${diffLabel}">${diffLabel}</span>`;
 
     const songList = dance.songs.length
       ? dance.songs.map(s => `<div>${esc(s)}</div>`).join('')
@@ -775,11 +823,16 @@
             <div class="dance-meta">${songTags}</div>
           </div>
           <div class="card-right">
+            ${diffBadge}
             ${priorityBadge}
             <span class="expand-icon">▾</span>
           </div>
         </div>
         <div class="card-body">
+          <div class="field-group">
+            <span class="field-label">Difficulty</span>
+            <div class="field-value">${diffBadge}</div>
+          </div>
           <div class="field-group">
             <span class="field-label">Songs</span>
             <div class="field-value">${songList}</div>
@@ -827,6 +880,7 @@
   function openAddModal() {
     editingId = null;
     selectedPriority = 'medium';
+    selectedDifficulty = 'medium';
     document.getElementById('modal-title').textContent = 'Add a Dance';
     document.getElementById('f-name').value = '';
     document.getElementById('f-notes').value = '';
@@ -834,6 +888,7 @@
     document.getElementById('f-tab').value = currentTab;
     resetSongFields([]);
     selectPriority('medium');
+    selectDifficulty('medium');
     updatePriorityVisibility();
     document.getElementById('modal-overlay').classList.add('open');
   }
@@ -849,6 +904,7 @@
     if (!dance) return;
     editingId = id;
     selectedPriority = dance.priority || 'medium';
+    selectedDifficulty = dance.difficulty || 'medium';
     document.getElementById('modal-title').textContent = 'Edit Dance';
     document.getElementById('f-name').value = dance.name || '';
     document.getElementById('f-notes').value = dance.notes || '';
@@ -856,6 +912,7 @@
     document.getElementById('f-tab').value = dance.tab;
     resetSongFields(dance.songs || []);
     selectPriority(selectedPriority);
+    selectDifficulty(selectedDifficulty);
     updatePriorityVisibility();
     document.getElementById('modal-overlay').classList.add('open');
   }
@@ -899,6 +956,14 @@
     });
   }
 
+  function selectDifficulty(d) {
+    selectedDifficulty = d;
+    document.querySelectorAll('.diff-option').forEach(el => {
+      el.className = 'diff-option';
+      if (el.dataset.d === d) el.classList.add('selected-' + d);
+    });
+  }
+
   function updatePriorityVisibility() {
     const tabVal = document.getElementById('f-tab').value;
     document.getElementById('priority-group').style.display = tabVal === 'learn' ? 'block' : 'none';
@@ -926,7 +991,7 @@
           const dance = data[t][idx];
           data[t].splice(idx, 1);
           dance.name = name; dance.songs = songs; dance.notes = notes;
-          dance.link = link; dance.tab = tab;
+          dance.link = link; dance.tab = tab; dance.difficulty = selectedDifficulty;
           if (tab === 'learn') dance.priority = selectedPriority;
           data[tab].push(dance);
         }
@@ -935,6 +1000,7 @@
       const dance = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2,5),
         name, songs, notes, link, tab,
+        difficulty: selectedDifficulty,
         priority: tab === 'learn' ? selectedPriority : null,
         added: Date.now()
       };
